@@ -436,8 +436,15 @@ async function encodeBundle(files) {
 async function decodeAES(file) {
   const hex = await file.text();
   const bytes = decodeBytes(hex);
-  const original = file.name.replace(/\\.aes$/i, "") || "decoded";
-  await downloadBlob(new Blob([bytes]), safeName(original), safeName(original));
+
+  // Remove ONLY the final .aes extension.
+  const originalName = file.name.replace(/\.aes$/i, "");
+
+  await downloadBlob(
+    new Blob([bytes]),
+    originalName,
+    originalName
+  );
 }
 
 async function decodeBundle(file) {
@@ -500,16 +507,28 @@ $("folderBtn").onclick = async () => {
 
 $("decodeBtn").onclick = async () => {
   const files = [...$("decodeFiles").files];
-  if (!files.length) return status("Select .aes or .aesbnk files.");
+
+  if (!files.length) {
+    return status("Select .aes or .aesbnk files.");
+  }
+
   try {
     for (const file of files) {
       status("Decoding " + file.name + "...");
-      if (/\\.aesbnk$/i.test(file.name)) await decodeBundle(file);
-      else if (/\\.aes$/i.test(file.name)) await decodeAES(file);
-      else throw new Error(file.name + " is not .aes or .aesbnk.");
+
+      if (file.name.toLowerCase().endsWith(".aesbnk")) {
+        await decodeBundle(file);
+      } else if (file.name.toLowerCase().endsWith(".aes")) {
+        await decodeAES(file);
+      } else {
+        throw new Error(file.name + " is not .aes or .aesbnk.");
+      }
     }
+
     status("Decode complete.");
-  } catch (e) { status("ERROR: " + e.message); }
+  } catch (e) {
+    status("ERROR: " + e.message);
+  }
 };
 </script>
 </body>
